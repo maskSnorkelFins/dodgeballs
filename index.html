@@ -20,11 +20,10 @@
 	var ballYStart = 80;
 	var speedFactor = 2.5;
 	var player, balls;
-	// var ballCountText, centerText;
 	var gameRunning = false;
-	var cursors; // for keyboard listener
 	var timer;
 	var elapsedTime = 0;
+	var cursors; // for keyboard listener
 
 
 	// responsive design
@@ -42,7 +41,7 @@
         type: Phaser.AUTO, //Phaser.WEBGL, or Phaser.CANVAS if WEBGL not available
 		width: gameWidth,
 		height: gameHeight,
-		backgroundColor: 0xcccccc, // white
+		backgroundColor: 0xcccccc, // light gray
 		physics: {
     		default: 'arcade',
         	arcade: {
@@ -82,20 +81,18 @@
 
 		// physics objects
 		// player
-		// player = this.physics.add.sprite(400, 300, 'player');
 		player = this.physics.add.image(gameWidth/2, gameHeight/2 + gameHeight/4, 'player'); // physics.add has Dynamic physics by default
 		player.setScale(ballRatio);
 		player.setCollideWorldBounds(true);
 		player.body.setCircle(player.width/2); // circular hitbox
-
 		player.body.setAllowGravity(false); // no gravity for player – NECESSARY?
-		player.body.setImmovable(true); // NECESSARY?
+		player.body.setImmovable(true); // no player rebound
 
 
 		// balls
 		balls = this.physics.add.group({
 			key: 'ball', // texture
-			repeat: ballStart - 1, // 1 created by default + X more = X+1 total
+			repeat: ballStart - 1, // 1 is created by default + X more = X+1 total
 			setXY: { x: xStep, y: ballYStart, stepX: xStep, stepY: 0 }
 		});
 		balls.children.iterate(ball => {
@@ -114,16 +111,14 @@
 		);
 		this.centerText = this.add.text(gameWidth/2, gameHeight/2, 'click to begin',
 			{ fontSize: '20px', fill: '#000', backgroundColor: "#ccc", align: 'center' }
-		).setOrigin(0.5, 0.5); // center text
+		).setOrigin(0.5, 0.5); // center-align text
 
 
 		// collision detection
 		this.physics.add.collider(balls, balls, () => {
 			this.bonkSound.play( { volume: 0.2, rate: 1.5 } );
 		});
-		// this.physics.add.collider(player, balls, endGame, null, this); // player=null (global), ball=this
 		this.physics.add.collider(player, balls, () => {
-
 			// end the game
 			gameRunning = false;
 			timer.remove();
@@ -139,27 +134,26 @@
 
 
 		// start after player clicks
-        // ballsStarted = false;
-        // this.input.once('pointerdown', startGame);
 		this.input.on('pointerdown', () => {
 			if (!gameRunning) {
 				elapsedTime = 0;
 
 
 				gameRunning = true;
-				this.centerText.setText("");// centerText.destroy();
+				this.centerText.setText("");
 				player.clearTint(); // undo tint
 
 				// reset player
 				player.setPosition(gameWidth/2, gameHeight/2 + gameHeight/4);
 				
-				// reset balls
+				// destroy added balls
 				let allBalls = balls.getChildren();
-				for (let i = allBalls.length-1; i >= ballStart; i--) { // destroy added balls
+				for (let i = allBalls.length-1; i >= ballStart; i--) {
 					allBalls[i].destroy();
 				}
 				ballCount = balls.getChildren().length;
 
+				// reset original balls
 				let index = 0;
 				balls.children.iterate(ball => {
 					ball.x = xStep + index * xStep;
@@ -197,10 +191,11 @@
 							this.time.delayedCall(2500, () => { // remove tint
 								ball.clearTint();
 							});
+							// halo around new ball
 							let halo = this.add.graphics();
-							halo.lineStyle(30, 0x00ff00, 0.5); // thickness, color
-							halo.strokeCircle(ball.x, ball.y, ball.width); // circle around player
-							halo.setDepth(ball.depth - 1); // behind the ball
+							halo.lineStyle(30, 0x00ff00, 0.5); // thickness, color, opacity
+							halo.strokeCircle(ball.x, ball.y, ball.width);
+							halo.setDepth(ball.depth - 1); // behind ball
 							// remove halo
 							this.time.delayedCall(1000, () => {
 								halo.destroy();
